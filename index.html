@@ -391,6 +391,7 @@
 <div class="nav">
   <span class="nav-icon">⚡</span>
   <span class="nav-title">อุปกรณ์ช่างไฟฟ้า</span>
+  <span id="sync-dot" style="width:8px;height:8px;border-radius:50%;background:#06D6A0;display:inline-block;opacity:0;transition:opacity .4s;margin-right:4px;" title="ซิงค์แล้ว"></span>
   <span class="nav-date" id="nav-date"></span>
 </div>
 
@@ -562,12 +563,41 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
-let tools = JSON.parse(localStorage.getItem('elec-tools') || '[]');
+// ---- FIREBASE CONFIG ----
+const firebaseConfig = {
+  databaseURL: "https://elec-tools-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const toolsRef = db.ref('tools');
+
+// ---- STATE ----
+let tools = [];
 let currentStatus = 'in';
 let currentImgData = null;
 
-function save() { localStorage.setItem('elec-tools', JSON.stringify(tools)); }
+// ---- REALTIME SYNC ----
+toolsRef.on('value', snapshot => {
+  const data = snapshot.val();
+  tools = data ? Object.values(data) : [];
+  renderList();
+  renderAdminStats();
+  const activeTab = document.querySelector('.tab.active');
+  if(activeTab && activeTab.dataset.tab === 'summary') renderSummary();
+  const dot = document.getElementById('sync-dot');
+  if(dot) { dot.style.opacity='1'; setTimeout(()=>dot.style.opacity='0',1200); }
+});
+
+// ---- SAVE to Firebase ----
+function save() {
+  const obj = {};
+  tools.forEach(t => { obj[t.id] = t; });
+  toolsRef.set(obj);
+}
 
 function thaiDate() {
   const d = new Date();
@@ -689,8 +719,7 @@ function editTool(id) {
 
 function deleteTool(id) {
   if(!confirm('ลบอุปกรณ์นี้?')) return;
-  tools = tools.filter(t => t.id !== id);
-  save(); renderList();
+  db.ref('tools/' + id).remove();
   showToast('🗑️ ลบแล้ว');
 }
 
@@ -698,9 +727,9 @@ function deleteTool(id) {
 const DEFAULT_PWD = '1234';
 let isAdmin = false;
 
-function getAdminPwd() {
-  return localStorage.getItem('elec-admin-pwd') || DEFAULT_PWD;
-}
+let _adminPwd = DEFAULT_PWD;
+db.ref('config/adminPwd').on('value', s => { if(s.val()) _adminPwd = s.val(); });
+function getAdminPwd() { return _adminPwd; }
 
 function toggleAdmin() {
   if(isAdmin) {
@@ -751,7 +780,7 @@ function changePassword() {
   if(!np) { showToast('⚠️ กรุณาใส่รหัสผ่านใหม่'); return; }
   if(np !== cp) { showToast('⚠️ รหัสผ่านไม่ตรงกัน'); return; }
   if(np.length < 4) { showToast('⚠️ รหัสผ่านต้องมีอย่างน้อย 4 ตัว'); return; }
-  localStorage.setItem('elec-admin-pwd', np);
+  db.ref('config/adminPwd').set(np);
   document.getElementById('new-pwd').value = '';
   document.getElementById('confirm-pwd').value = '';
   showToast('✅ เปลี่ยนรหัสผ่านสำเร็จ!');
@@ -759,10 +788,7 @@ function changePassword() {
 
 function clearAllData() {
   if(!confirm('⚠️ ลบข้อมูลอุปกรณ์ทั้งหมด?\nการกระทำนี้ไม่สามารถย้อนกลับได้')) return;
-  tools = [];
-  save();
-  renderList();
-  renderAdminStats();
+  toolsRef.remove();
   showToast('🗑️ ลบข้อมูลทั้งหมดแล้ว');
 }
 
@@ -977,4 +1003,3 @@ renderList();
 </script>
 </body>
 </html>
-
