@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ติดตามอุปกรณ์ช่างไฟฟ้า</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=Prompt:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #FF6B2B;
+    --orange-light: #FF8C55;
+    --orange-dark: #E55A1F;
+    --navy: #1A2340;
+    --navy-light: #243057;
+    --yellow: #FFD166;
+    --green: #06D6A0;
+    --red: #EF476F;
+    --gray: #F5F6FA;
+    --gray2: #E8EAF0;
+    --text: #1A2340;
+    --text-muted: #6B7280;
+    --white: #FFFFFF;
+    --radius: 16px;
+    --shadow: 0 4px 20px rgba(26,35,64,0.10);
+    --shadow-lg: 0 8px 32px rgba(26,35,64,0.16);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: #F0F2F8;
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  /* NAV */
+  .nav {
+    background: var(--navy);
+    padding: 16px 20px 14px;
+    display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 16px rgba(26,35,64,0.25);
+  }
+  .nav-icon { font-size: 24px; }
+  .nav-title { font-family: 'Prompt', sans-serif; color: var(--white); font-size: 18px; font-weight: 700; flex: 1; }
+  .nav-date { color: var(--yellow); font-size: 12px; font-weight: 600; background: rgba(255,209,102,0.15); padding: 4px 10px; border-radius: 20px; }
+
+  /* TABS */
+  .tabs {
+    display: flex; gap: 4px; padding: 16px 20px 0;
+    background: var(--navy);
+  }
+  .tab {
+    flex: 1; padding: 10px 4px; border: none; background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.6); font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 600;
+    border-radius: 12px 12px 0 0; cursor: pointer; transition: all .2s;
+  }
+  .tab.active { background: #F0F2F8; color: var(--navy); }
+
+  /* CONTENT */
+  .content { display: none; padding: 16px 20px; }
+  .content.active { display: block; }
+
+  /* STATS BAR */
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat-card {
+    background: var(--white); border-radius: 14px; padding: 14px 10px;
+    text-align: center; box-shadow: var(--shadow);
+  }
+  .stat-num { font-family: 'Prompt', sans-serif; font-size: 24px; font-weight: 700; }
+  .stat-num.total { color: var(--navy); }
+  .stat-num.inoffice { color: var(--green); }
+  .stat-num.out { color: var(--orange); }
+  .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-weight: 600; }
+
+  /* TOOL CARDS */
+  .tools-list { display: flex; flex-direction: column; gap: 12px; }
+  .tool-card {
+    background: var(--white); border-radius: var(--radius); padding: 14px;
+    box-shadow: var(--shadow); display: flex; gap: 12px; align-items: flex-start;
+    transition: transform .15s;
+    position: relative; overflow: hidden;
+  }
+  .tool-card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: var(--green);
+  }
+  .tool-card.out::before { background: var(--orange); }
+  .tool-img {
+    width: 64px; height: 64px; border-radius: 10px; object-fit: cover;
+    background: var(--gray2); flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+  }
+  .tool-img img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+  .tool-info { flex: 1; min-width: 0; }
+  .tool-name { font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 4px; }
+  .tool-location { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+  .tool-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
+  }
+  .badge-in { background: rgba(6,214,160,0.12); color: #059669; }
+  .badge-out { background: rgba(255,107,43,0.12); color: var(--orange-dark); }
+  .tool-who { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .tool-actions { display: flex; flex-direction: column; gap: 6px; align-self: center; }
+  .btn-edit, .btn-del {
+    border: none; border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: 'Sarabun', sans-serif;
+  }
+  .btn-edit { background: var(--gray2); color: var(--text); }
+  .btn-del { background: rgba(239,71,111,0.1); color: var(--red); }
+
+  /* ADD FORM */
+  .form-card {
+    background: var(--white); border-radius: var(--radius); padding: 20px;
+    box-shadow: var(--shadow); margin-bottom: 16px;
+  }
+  .form-title { font-family: 'Prompt', sans-serif; font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 16px; }
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block; }
+  .form-input {
+    width: 100%; padding: 11px 14px; border: 2px solid var(--gray2); border-radius: 10px;
+    font-family: 'Sarabun', sans-serif; font-size: 14px; color: var(--text);
+    outline: none; transition: border .2s; background: var(--gray);
+  }
+  .form-input:focus { border-color: var(--orange); background: var(--white); }
+  .form-select {
+    width: 100%; padding: 11px 14px; border: 2px solid var(--gray2); border-radius: 10px;
+    font-family: 'Sarabun', sans-serif; font-size: 14px; color: var(--text);
+    background: var(--gray); outline: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+  }
+  .img-upload-area {
+    border: 2px dashed var(--gray2); border-radius: 12px; padding: 20px;
+    text-align: center; cursor: pointer; transition: border .2s; background: var(--gray);
+  }
+  .img-upload-area:hover, .img-upload-area.dragover { border-color: var(--orange); background: rgba(255,107,43,0.04); }
+  .img-preview { max-width: 100%; max-height: 150px; border-radius: 10px; margin-top: 10px; display: none; }
+  .upload-icon { font-size: 32px; margin-bottom: 6px; }
+  .upload-text { font-size: 13px; color: var(--text-muted); }
+  .status-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .status-btn {
+    padding: 12px; border: 2px solid var(--gray2); border-radius: 10px;
+    background: var(--gray); font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all .2s; color: var(--text-muted);
+  }
+  .status-btn.active-in { border-color: var(--green); background: rgba(6,214,160,0.08); color: #059669; }
+  .status-btn.active-out { border-color: var(--orange); background: rgba(255,107,43,0.08); color: var(--orange-dark); }
+  .btn-submit {
+    width: 100%; padding: 14px; background: var(--orange); color: var(--white);
+    border: none; border-radius: 12px; font-family: 'Prompt', sans-serif; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: background .2s; margin-top: 4px;
+  }
+  .btn-submit:hover { background: var(--orange-dark); }
+
+  /* SUMMARY PAGE */
+  .summary-header {
+    background: var(--navy); color: var(--white); border-radius: var(--radius);
+    padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-lg);
+    text-align: center; position: relative; overflow: hidden;
+  }
+  .summary-header::before {
+    content: ''; position: absolute; top: -30px; right: -30px;
+    width: 120px; height: 120px; border-radius: 50%;
+    background: rgba(255,107,43,0.2);
+  }
+  .summary-header-title { font-family: 'Prompt', sans-serif; font-size: 20px; font-weight: 700; }
+  .summary-header-date { color: var(--yellow); font-size: 14px; margin-top: 4px; }
+  .summary-header-subtitle { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 6px; }
+
+  .summary-section-title {
+    font-family: 'Prompt', sans-serif; font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .section-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-green { background: var(--green); }
+  .dot-orange { background: var(--orange); }
+
+  .summary-tool-row {
+    background: var(--white); border-radius: 12px; padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(26,35,64,0.06);
+  }
+  .summary-tool-img {
+    width: 48px; height: 48px; border-radius: 8px; background: var(--gray2);
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    flex-shrink: 0;
+  }
+  .summary-tool-img img { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; }
+  .summary-tool-name { font-weight: 700; font-size: 14px; }
+  .summary-tool-loc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .btn-screenshot {
+    width: 100%; padding: 15px; background: var(--orange); color: var(--white);
+    border: none; border-radius: 12px; font-family: 'Prompt', sans-serif; font-size: 15px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 16px rgba(255,107,43,0.35); margin-bottom: 10px;
+  }
+  .btn-copy-text {
+    width: 100%; padding: 12px; background: var(--navy); color: var(--white);
+    border: none; border-radius: 12px; font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-text { font-size: 14px; }
+
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: var(--white); padding: 12px 20px;
+    border-radius: 12px; font-size: 13px; font-weight: 600;
+    opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  /* SNAPSHOT AREA */
+  #snapshot-area {
+    background: #F0F2F8; padding: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <span class="nav-icon">⚡</span>
+  <span class="nav-title">อุปกรณ์ช่างไฟฟ้า</span>
+  <span class="nav-date" id="nav-date"></span>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('list')">📋 รายการ</button>
+  <button class="tab" onclick="switchTab('add')">➕ เพิ่มอุปกรณ์</button>
+  <button class="tab" onclick="switchTab('summary')">📊 สรุปวัน</button>
+</div>
+
+<!-- TAB: LIST -->
+<div class="content active" id="tab-list">
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-num total" id="stat-total">0</div>
+      <div class="stat-label">ทั้งหมด</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num inoffice" id="stat-in">0</div>
+      <div class="stat-label">ในออฟฟิศ</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num out" id="stat-out">0</div>
+      <div class="stat-label">นำออก</div>
+    </div>
+  </div>
+  <div class="tools-list" id="tools-list">
+    <div class="empty-state">
+      <div class="empty-icon">🔧</div>
+      <div class="empty-text">ยังไม่มีอุปกรณ์<br>กด "เพิ่มอุปกรณ์" เพื่อเริ่มต้น</div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: ADD -->
+<div class="content" id="tab-add">
+  <div class="form-card">
+    <div class="form-title">➕ เพิ่ม / แก้ไขอุปกรณ์</div>
+    <input type="hidden" id="edit-id">
+
+    <div class="form-group">
+      <label class="form-label">ชื่ออุปกรณ์ *</label>
+      <input class="form-input" id="tool-name" placeholder="เช่น สว่านไฟฟ้า, คีมปากแหลม..." type="text">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">รูปภาพอุปกรณ์</label>
+      <div class="img-upload-area" id="upload-area" onclick="document.getElementById('img-input').click()">
+        <div class="upload-icon">📷</div>
+        <div class="upload-text">แตะเพื่อเลือกรูป</div>
+        <img id="img-preview" class="img-preview">
+      </div>
+      <input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleImg(this)">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">สถานะ *</label>
+      <div class="status-toggle">
+        <button type="button" class="status-btn active-in" id="btn-in" onclick="setStatus('in')">✅ อยู่ในออฟฟิศ</button>
+        <button type="button" class="status-btn" id="btn-out" onclick="setStatus('out')">🚧 นำออกไป</button>
+      </div>
+    </div>
+
+    <div class="form-group" id="location-group" style="display:none">
+      <label class="form-label">สถานที่ / งาน *</label>
+      <input class="form-input" id="tool-location" placeholder="เช่น หมู่บ้านสุขสันต์, งาน SCG..." type="text">
+    </div>
+
+    <div class="form-group" id="who-group" style="display:none">
+      <label class="form-label">อยู่กับใคร *</label>
+      <input class="form-input" id="tool-who" placeholder="ชื่อช่างที่นำออก..." type="text">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">หมายเหตุ</label>
+      <input class="form-input" id="tool-note" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)" type="text">
+    </div>
+
+    <button class="btn-submit" onclick="saveTool()">💾 บันทึกอุปกรณ์</button>
+  </div>
+</div>
+
+<!-- TAB: SUMMARY -->
+<div class="content" id="tab-summary">
+  <div id="snapshot-area">
+    <div class="summary-header">
+      <div class="summary-header-title">⚡ สรุปอุปกรณ์ช่างไฟฟ้า</div>
+      <div class="summary-header-date" id="summary-date"></div>
+      <div class="summary-header-subtitle" id="summary-subtitle"></div>
+    </div>
+
+    <div id="summary-in-section"></div>
+    <div id="summary-out-section"></div>
+    <div id="summary-empty" class="empty-state" style="display:none">
+      <div class="empty-icon">📭</div>
+      <div class="empty-text">ยังไม่มีข้อมูลอุปกรณ์</div>
+    </div>
+  </div>
+
+  <div style="padding: 0 0 8px">
+    <button class="btn-screenshot" onclick="doScreenshot()">
+      📸 บันทึกภาพส่ง LINE
+    </button>
+    <button class="btn-copy-text" onclick="copyText()">
+      📋 คัดลอกข้อความส่ง LINE
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+let tools = JSON.parse(localStorage.getItem('elec-tools') || '[]');
+let currentStatus = 'in';
+let currentImgData = null;
+
+function save() { localStorage.setItem('elec-tools', JSON.stringify(tools)); }
+
+function thaiDate() {
+  const d = new Date();
+  const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  return `วัน${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+
+function shortDate() {
+  const d = new Date();
+  return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()+543}`;
+}
+
+document.getElementById('nav-date').textContent = shortDate();
+document.getElementById('summary-date').textContent = thaiDate();
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['list','add','summary'][i] === name);
+  });
+  document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name === 'summary') renderSummary();
+  if(name === 'list') renderList();
+}
+
+function setStatus(s) {
+  currentStatus = s;
+  document.getElementById('btn-in').className = 'status-btn' + (s==='in'?' active-in':'');
+  document.getElementById('btn-out').className = 'status-btn' + (s==='out'?' active-out':'');
+  document.getElementById('location-group').style.display = s==='out'?'block':'none';
+  document.getElementById('who-group').style.display = s==='out'?'block':'none';
+}
+
+function handleImg(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentImgData = e.target.result;
+    const prev = document.getElementById('img-preview');
+    prev.src = currentImgData;
+    prev.style.display = 'block';
+    document.querySelector('#upload-area .upload-icon').style.display = 'none';
+    document.querySelector('#upload-area .upload-text').textContent = 'แตะเพื่อเปลี่ยนรูป';
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveTool() {
+  const name = document.getElementById('tool-name').value.trim();
+  if(!name) { showToast('⚠️ กรุณาใส่ชื่ออุปกรณ์'); return; }
+  if(currentStatus === 'out') {
+    const loc = document.getElementById('tool-location').value.trim();
+    const who = document.getElementById('tool-who').value.trim();
+    if(!loc || !who) { showToast('⚠️ กรุณาระบุสถานที่และชื่อผู้นำออก'); return; }
+  }
+  const editId = document.getElementById('edit-id').value;
+  const tool = {
+    id: editId || Date.now().toString(),
+    name,
+    status: currentStatus,
+    location: document.getElementById('tool-location').value.trim(),
+    who: document.getElementById('tool-who').value.trim(),
+    note: document.getElementById('tool-note').value.trim(),
+    img: currentImgData,
+    updatedAt: new Date().toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})
+  };
+  if(editId) {
+    const idx = tools.findIndex(t => t.id === editId);
+    if(idx >= 0) tools[idx] = tool;
+  } else {
+    tools.push(tool);
+  }
+  save();
+  resetForm();
+  showToast('✅ บันทึกสำเร็จ!');
+  switchTab('list');
+}
+
+function resetForm() {
+  document.getElementById('edit-id').value = '';
+  document.getElementById('tool-name').value = '';
+  document.getElementById('tool-location').value = '';
+  document.getElementById('tool-who').value = '';
+  document.getElementById('tool-note').value = '';
+  document.getElementById('img-input').value = '';
+  document.getElementById('img-preview').style.display = 'none';
+  document.getElementById('img-preview').src = '';
+  document.querySelector('#upload-area .upload-icon').style.display = '';
+  document.querySelector('#upload-area .upload-text').textContent = 'แตะเพื่อเลือกรูป';
+  currentImgData = null;
+  setStatus('in');
+}
+
+function editTool(id) {
+  const t = tools.find(x => x.id === id);
+  if(!t) return;
+  document.getElementById('edit-id').value = t.id;
+  document.getElementById('tool-name').value = t.name;
+  document.getElementById('tool-location').value = t.location || '';
+  document.getElementById('tool-who').value = t.who || '';
+  document.getElementById('tool-note').value = t.note || '';
+  if(t.img) {
+    currentImgData = t.img;
+    const prev = document.getElementById('img-preview');
+    prev.src = t.img;
+    prev.style.display = 'block';
+    document.querySelector('#upload-area .upload-icon').style.display = 'none';
+    document.querySelector('#upload-area .upload-text').textContent = 'แตะเพื่อเปลี่ยนรูป';
+  }
+  setStatus(t.status);
+  switchTab('add');
+}
+
+function deleteTool(id) {
+  if(!confirm('ลบอุปกรณ์นี้?')) return;
+  tools = tools.filter(t => t.id !== id);
+  save(); renderList();
+  showToast('🗑️ ลบแล้ว');
+}
+
+function renderList() {
+  const list = document.getElementById('tools-list');
+  const inCount = tools.filter(t => t.status === 'in').length;
+  const outCount = tools.filter(t => t.status === 'out').length;
+  document.getElementById('stat-total').textContent = tools.length;
+  document.getElementById('stat-in').textContent = inCount;
+  document.getElementById('stat-out').textContent = outCount;
+
+  if(!tools.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔧</div><div class="empty-text">ยังไม่มีอุปกรณ์<br>กด "เพิ่มอุปกรณ์" เพื่อเริ่มต้น</div></div>`;
+    return;
+  }
+  list.innerHTML = tools.map(t => `
+    <div class="tool-card ${t.status==='out'?'out':''}">
+      <div class="tool-img">
+        ${t.img ? `<img src="${t.img}">` : getEmoji(t.name)}
+      </div>
+      <div class="tool-info">
+        <div class="tool-name">${t.name}</div>
+        <div class="tool-location">📍 ${t.status==='in'?'ออฟฟิศ':(t.location||'-')}</div>
+        <div>
+          <span class="tool-badge ${t.status==='in'?'badge-in':'badge-out'}">
+            ${t.status==='in'?'✅ ในออฟฟิศ':'🚧 นำออกไป'}
+          </span>
+        </div>
+        ${t.status==='out'&&t.who?`<div class="tool-who">👤 ${t.who}</div>`:''}
+        ${t.note?`<div class="tool-who">📝 ${t.note}</div>`:''}
+      </div>
+      <div class="tool-actions">
+        <button class="btn-edit" onclick="editTool('${t.id}')">✏️ แก้ไข</button>
+        <button class="btn-del" onclick="deleteTool('${t.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getEmoji(name) {
+  const n = name.toLowerCase();
+  if(n.includes('สว่าน')) return '🔩';
+  if(n.includes('คีม')) return '🔧';
+  if(n.includes('ไขควง')) return '🪛';
+  if(n.includes('เทป') || n.includes('วัด')) return '📏';
+  if(n.includes('มัลติ') || n.includes('มิเตอร์')) return '📟';
+  if(n.includes('เลื่อย')) return '🪚';
+  if(n.includes('ค้อน')) return '🔨';
+  return '🔌';
+}
+
+function renderSummary() {
+  const inTools = tools.filter(t => t.status === 'in');
+  const outTools = tools.filter(t => t.status === 'out');
+  document.getElementById('summary-subtitle').textContent =
+    `ทั้งหมด ${tools.length} รายการ · ในออฟฟิศ ${inTools.length} · นำออก ${outTools.length}`;
+
+  const empty = document.getElementById('summary-empty');
+  empty.style.display = tools.length ? 'none' : 'block';
+
+  const mkRow = t => `
+    <div class="summary-tool-row">
+      <div class="summary-tool-img">
+        ${t.img ? `<img src="${t.img}">` : getEmoji(t.name)}
+      </div>
+      <div>
+        <div class="summary-tool-name">${t.name}</div>
+        <div class="summary-tool-loc">
+          ${t.status==='in'
+            ? '✅ ในออฟฟิศ'
+            : `🚧 ${t.location||''}${t.who?' · 👤 '+t.who:''}`}
+        </div>
+        ${t.note?`<div class="summary-tool-loc">📝 ${t.note}</div>`:''}
+      </div>
+    </div>`;
+
+  document.getElementById('summary-in-section').innerHTML = inTools.length ? `
+    <div class="summary-section-title">
+      <span class="section-dot dot-green"></span>อยู่ในออฟฟิศ (${inTools.length})
+    </div>
+    ${inTools.map(mkRow).join('')}
+    <div style="height:12px"></div>` : '';
+
+  document.getElementById('summary-out-section').innerHTML = outTools.length ? `
+    <div class="summary-section-title">
+      <span class="section-dot dot-orange"></span>นำออกจากออฟฟิศ (${outTools.length})
+    </div>
+    ${outTools.map(mkRow).join('')}` : '';
+}
+
+function doScreenshot() {
+  showToast('⏳ กำลังสร้างภาพ...');
+  const el = document.getElementById('snapshot-area');
+  html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#F0F2F8' }).then(canvas => {
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `อุปกรณ์_${shortDate().replace(/\//g,'-')}.png`;
+      a.click();
+      showToast('✅ บันทึกรูปสำเร็จ! ส่ง LINE ได้เลย');
+    });
+  });
+}
+
+function copyText() {
+  const inTools = tools.filter(t => t.status === 'in');
+  const outTools = tools.filter(t => t.status === 'out');
+  let text = `⚡ สรุปอุปกรณ์ช่างไฟฟ้า\n📅 ${thaiDate()}\n`;
+  text += `━━━━━━━━━━━━━━\n`;
+  if(inTools.length) {
+    text += `\n✅ ในออฟฟิศ (${inTools.length} รายการ)\n`;
+    inTools.forEach(t => { text += `  • ${t.name}\n`; });
+  }
+  if(outTools.length) {
+    text += `\n🚧 นำออก (${outTools.length} รายการ)\n`;
+    outTools.forEach(t => { text += `  • ${t.name}\n    📍 ${t.location||'-'} | 👤 ${t.who||'-'}\n`; });
+  }
+  text += `━━━━━━━━━━━━━━\nรวม ${tools.length} รายการ`;
+  navigator.clipboard.writeText(text).then(() => showToast('✅ คัดลอกแล้ว! วางใน LINE ได้เลย'));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+renderList();
+</script>
+</body>
+</html>
