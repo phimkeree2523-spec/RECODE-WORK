@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>ติดตามอุปกรณ์ช่างไฟฟ้า</title>
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="อุปกรณ์ช่าง">
+<meta name="theme-color" content="#1A2340">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=Prompt:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -341,12 +349,44 @@
   body:not(.is-admin) .admin-only { display: none !important; }
   body:not(.is-admin) .tab.admin-only { display: none !important; padding: 0 !important; flex: 0 !important; min-width: 0 !important; overflow: hidden !important; }
 
+  /* PWA INSTALL */
+  #pwa-install-bar {
+    display: none;
+    background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+    padding: 10px 16px;
+    align-items: center; gap: 10px;
+    animation: slideDown .3s ease;
+  }
+  @keyframes slideDown { from { transform: translateY(-100%); opacity:0; } to { transform: translateY(0); opacity:1; } }
+  #pwa-install-bar.show { display: flex; }
+  .pwa-text { flex:1; color: white; font-size: 13px; font-weight: 600; }
+  .pwa-text span { font-size: 11px; opacity: .85; display:block; }
+  .btn-pwa-install {
+    background: white; color: var(--orange-dark); border: none;
+    border-radius: 8px; padding: 7px 14px; font-family: 'Sarabun', sans-serif;
+    font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .btn-pwa-dismiss {
+    background: none; border: none; color: rgba(255,255,255,0.7);
+    font-size: 18px; cursor: pointer; padding: 0 2px; line-height: 1;
+  }
+
   /* CHANGE PASSWORD */
   .pwd-section { margin-top: 20px; border-top: 2px solid var(--gray2); padding-top: 18px; }
   .pwd-section .form-title { font-size: 14px; }
 </style>
 </head>
 <body>
+
+<!-- PWA Install Bar -->
+<div id="pwa-install-bar">
+  <div class="pwa-text">
+    📲 ติดตั้งแอปบนมือถือ
+    <span>ใช้งานได้แม้ไม่มีอินเทอร์เน็ต</span>
+  </div>
+  <button class="btn-pwa-install" id="btn-pwa-install">ติดตั้ง</button>
+  <button class="btn-pwa-dismiss" onclick="dismissInstall()" title="ปิด">✕</button>
+</div>
 
 <div class="nav">
   <span class="nav-icon">⚡</span>
@@ -892,7 +932,45 @@ function closeLightbox() {
   document.body.style.overflow = '';
 }
 
-  
+// ---- PWA / SERVICE WORKER ----
+let deferredPrompt = null;
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!localStorage.getItem('pwa-dismissed')) {
+    document.getElementById('pwa-install-bar').classList.add('show');
+  }
+});
+
+document.getElementById('btn-pwa-install').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') {
+    document.getElementById('pwa-install-bar').classList.remove('show');
+    showToast('✅ ติดตั้งแอปสำเร็จ!');
+  }
+  deferredPrompt = null;
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('pwa-install-bar').classList.remove('show');
+  deferredPrompt = null;
+});
+
+function dismissInstall() {
+  document.getElementById('pwa-install-bar').classList.remove('show');
+  localStorage.setItem('pwa-dismissed', '1');
+}
+// ---- END PWA ----
+
 document.addEventListener('keydown', e => { if(e.key === 'Escape') { closeLightbox(); closeAdminModal(); } });
 
 renderList();
