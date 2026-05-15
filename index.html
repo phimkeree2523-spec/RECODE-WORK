@@ -55,6 +55,7 @@
     color: rgba(255,255,255,0.6); font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 600;
     border-radius: 12px 12px 0 0; cursor: pointer; transition: all .2s;
   }
+  .tab[style*="display:none"], .tab[style*="display: none"] { flex: 0; }
   .tab.active { background: #F0F2F8; color: var(--navy); }
 
   /* CONTENT */
@@ -223,13 +224,13 @@
 
   /* LIGHTBOX */
   .lightbox-overlay {
-    display: none;
+    visibility: hidden; opacity: 0; pointer-events: none;
     position: fixed; inset: 0; z-index: 9999;
     background: rgba(0,0,0,0.92);
-    align-items: center; justify-content: center;
-    animation: fadeIn .2s ease;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity .2s, visibility .2s;
   }
-  .lightbox-overlay.open { display: flex; }
+  .lightbox-overlay.open { visibility: visible; opacity: 1; pointer-events: auto; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   .lightbox-img {
     max-width: 96vw; max-height: 90vh;
@@ -249,6 +250,100 @@
   .tool-img img, .summary-tool-img img {
     cursor: zoom-in;
   }
+
+  /* SAVE STATUS */
+  .save-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600; padding: 4px 10px;
+    border-radius: 20px; margin-top: 4px;
+    background: rgba(6,214,160,0.12); color: #059669;
+    transition: all .3s;
+  }
+  .save-status.saving {
+    background: rgba(255,209,102,0.15); color: #b45309;
+  }
+  .save-pulse {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%,100%{opacity:1} 50%{opacity:0.3}
+  }
+  .tool-updated {
+    font-size: 10px; color: var(--text-muted); margin-top: 3px;
+  }
+
+  /* ADMIN */
+  .admin-lock-bar {
+    background: var(--navy-light); padding: 8px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .admin-lock-bar .lock-info { color: rgba(255,255,255,0.6); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .btn-admin-login {
+    background: var(--yellow); color: var(--navy); border: none;
+    border-radius: 8px; padding: 5px 12px; font-family: 'Sarabun', sans-serif;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .btn-admin-logout {
+    background: rgba(239,71,111,0.15); color: var(--red); border: none;
+    border-radius: 8px; padding: 5px 12px; font-family: 'Sarabun', sans-serif;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+
+  /* ADMIN MODAL */
+  .modal-overlay {
+    visibility: hidden; opacity: 0; pointer-events: none;
+    position: fixed; inset: 0; z-index: 9998;
+    background: rgba(0,0,0,0.65);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    transition: opacity .2s, visibility .2s;
+  }
+  .modal-overlay.open { visibility: visible; opacity: 1; pointer-events: auto; }
+  .modal-box {
+    background: var(--white); border-radius: 20px; padding: 28px 24px;
+    width: 100%; max-width: 360px; box-shadow: var(--shadow-lg);
+    animation: zoomIn .2s ease;
+  }
+  .modal-title { font-family: 'Prompt', sans-serif; font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+  .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .modal-input {
+    width: 100%; padding: 12px 14px; border: 2px solid var(--gray2); border-radius: 10px;
+    font-family: 'Sarabun', sans-serif; font-size: 15px; color: var(--text);
+    background: var(--gray); outline: none; margin-bottom: 14px;
+    letter-spacing: 4px; text-align: center;
+  }
+  .modal-input:focus { border-color: var(--orange); background: var(--white); }
+  .modal-error { color: var(--red); font-size: 12px; margin-top: -10px; margin-bottom: 10px; min-height: 16px; }
+  .modal-btns { display: flex; gap: 8px; }
+  .btn-modal-cancel {
+    flex: 1; padding: 12px; background: var(--gray2); color: var(--text);
+    border: none; border-radius: 10px; font-family: 'Sarabun', sans-serif;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .btn-modal-ok {
+    flex: 2; padding: 12px; background: var(--orange); color: var(--white);
+    border: none; border-radius: 10px; font-family: 'Prompt', sans-serif;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+
+  /* ADMIN TAB PANEL */
+  .admin-panel .form-card { border: 2px solid rgba(255,209,102,0.3); }
+  .admin-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(255,209,102,0.2); color: #92400e;
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+    margin-left: 6px;
+  }
+
+  /* hide admin controls when not admin */
+  body:not(.is-admin) .admin-only { display: none !important; }
+  body:not(.is-admin) .tab.admin-only { display: none !important; padding: 0 !important; flex: 0 !important; min-width: 0 !important; overflow: hidden !important; }
+
+  /* CHANGE PASSWORD */
+  .pwd-section { margin-top: 20px; border-top: 2px solid var(--gray2); padding-top: 18px; }
+  .pwd-section .form-title { font-size: 14px; }
 </style>
 </head>
 <body>
@@ -259,10 +354,16 @@
   <span class="nav-date" id="nav-date"></span>
 </div>
 
+<div class="admin-lock-bar">
+  <div class="lock-info" id="lock-info">🔒 โหมดดูข้อมูล</div>
+  <button class="btn-admin-login" id="btn-toggle-admin" onclick="toggleAdmin()">เข้าสู่ระบบ Admin</button>
+</div>
+
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('list')">📋 รายการ</button>
-  <button class="tab" onclick="switchTab('add')">➕ เพิ่มอุปกรณ์</button>
-  <button class="tab" onclick="switchTab('summary')">📊 สรุปวัน</button>
+  <button class="tab active" data-tab="list" onclick="switchTab('list')">📋 รายการ</button>
+  <button class="tab admin-only" data-tab="add" onclick="switchTab('add')">➕ เพิ่มอุปกรณ์/นำออก</button>
+  <button class="tab" data-tab="summary" onclick="switchTab('summary')">📊 สรุปวัน</button>
+  <button class="tab admin-only" data-tab="admin" onclick="switchTab('admin')">⚙️ Admin</button>
 </div>
 
 <!-- TAB: LIST -->
@@ -364,6 +465,54 @@
   </div>
 </div>
 
+<!-- TAB: ADMIN -->
+<div class="content admin-panel admin-only" id="tab-admin">
+  <div class="form-card">
+    <div class="form-title">⚙️ จัดการระบบ <span class="admin-badge">👑 Admin</span></div>
+
+    <div class="form-group">
+      <label class="form-label">ข้อมูลระบบ</label>
+      <div style="background:var(--gray);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--text-muted);">
+        📦 อุปกรณ์ทั้งหมด: <strong id="admin-total" style="color:var(--navy)">0</strong> รายการ<br>
+        ✅ ในออฟฟิศ: <strong id="admin-in" style="color:#059669">0</strong> รายการ<br>
+        🚧 นำออก: <strong id="admin-out" style="color:var(--orange)">0</strong> รายการ
+      </div>
+    </div>
+
+    <div class="pwd-section">
+      <div class="form-title">🔑 เปลี่ยนรหัสผ่าน Admin</div>
+      <div class="form-group">
+        <label class="form-label">รหัสผ่านใหม่</label>
+        <input class="form-input" id="new-pwd" type="password" placeholder="ตั้งรหัสผ่านใหม่...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ยืนยันรหัสผ่าน</label>
+        <input class="form-input" id="confirm-pwd" type="password" placeholder="พิมพ์รหัสผ่านอีกครั้ง...">
+      </div>
+      <button class="btn-submit" onclick="changePassword()" style="background:var(--navy)">🔒 บันทึกรหัสผ่านใหม่</button>
+    </div>
+
+    <div class="pwd-section">
+      <div class="form-title" style="color:var(--red)">⚠️ โซนอันตราย</div>
+      <button class="btn-submit" onclick="clearAllData()" style="background:var(--red);margin-top:8px">🗑️ ลบข้อมูลทั้งหมด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN MODAL -->
+<div class="modal-overlay" id="admin-modal">
+  <div class="modal-box">
+    <div class="modal-title">🔐 เข้าสู่ระบบ Admin</div>
+    <div class="modal-sub">ใส่รหัสผ่านเพื่อเข้าถึงโหมด Admin</div>
+    <input class="modal-input" id="admin-pwd-input" type="password" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')submitAdminLogin()">
+    <div class="modal-error" id="admin-modal-error"></div>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="closeAdminModal()">ยกเลิก</button>
+      <button class="btn-modal-ok" onclick="submitAdminLogin()">เข้าสู่ระบบ</button>
+    </div>
+  </div>
+</div>
+
 <!-- LIGHTBOX -->
 <div class="lightbox-overlay" id="lightbox" onclick="closeLightbox()">
   <button class="lightbox-close" onclick="closeLightbox()">✕</button>
@@ -396,13 +545,16 @@ document.getElementById('nav-date').textContent = shortDate();
 document.getElementById('summary-date').textContent = thaiDate();
 
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', ['list','add','summary'][i] === name);
+  const tabNames = ['list','add','summary','admin'];
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === name);
   });
   document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
+  const el = document.getElementById('tab-'+name);
+  if(el) el.classList.add('active');
   if(name === 'summary') renderSummary();
   if(name === 'list') renderList();
+  if(name === 'admin') renderAdminStats();
 }
 
 function setStatus(s) {
@@ -455,6 +607,7 @@ function saveTool() {
   }
   save();
   resetForm();
+  showSaveStatus();
   showToast('✅ บันทึกสำเร็จ!');
   switchTab('list');
 }
@@ -501,6 +654,105 @@ function deleteTool(id) {
   showToast('🗑️ ลบแล้ว');
 }
 
+// ---- ADMIN SYSTEM ----
+const DEFAULT_PWD = '1234';
+let isAdmin = false;
+
+function getAdminPwd() {
+  return localStorage.getItem('elec-admin-pwd') || DEFAULT_PWD;
+}
+
+function toggleAdmin() {
+  if(isAdmin) {
+    isAdmin = false;
+    document.body.classList.remove('is-admin');
+    document.getElementById('lock-info').textContent = '🔒 โหมดดูข้อมูล';
+    document.getElementById('btn-toggle-admin').textContent = 'เข้าสู่ระบบ Admin';
+    document.getElementById('btn-toggle-admin').className = 'btn-admin-login';
+    switchTab('list');
+    showToast('🔒 ออกจากโหมด Admin แล้ว');
+  } else {
+    openAdminModal();
+  }
+}
+
+function openAdminModal() {
+  document.getElementById('admin-pwd-input').value = '';
+  document.getElementById('admin-modal-error').textContent = '';
+  document.getElementById('admin-modal').classList.add('open');
+  setTimeout(() => document.getElementById('admin-pwd-input').focus(), 100);
+}
+
+function closeAdminModal() {
+  document.getElementById('admin-modal').classList.remove('open');
+}
+
+function submitAdminLogin() {
+  const val = document.getElementById('admin-pwd-input').value;
+  if(val === getAdminPwd()) {
+    isAdmin = true;
+    document.body.classList.add('is-admin');
+    document.getElementById('lock-info').innerHTML = '👑 Admin Mode';
+    document.getElementById('btn-toggle-admin').textContent = 'ออกจาก Admin';
+    document.getElementById('btn-toggle-admin').className = 'btn-admin-logout';
+    closeAdminModal();
+    renderList();
+    showToast('👑 เข้าสู่ระบบ Admin สำเร็จ!');
+  } else {
+    document.getElementById('admin-modal-error').textContent = '❌ รหัสผ่านไม่ถูกต้อง';
+    document.getElementById('admin-pwd-input').value = '';
+    document.getElementById('admin-pwd-input').focus();
+  }
+}
+
+function changePassword() {
+  const np = document.getElementById('new-pwd').value;
+  const cp = document.getElementById('confirm-pwd').value;
+  if(!np) { showToast('⚠️ กรุณาใส่รหัสผ่านใหม่'); return; }
+  if(np !== cp) { showToast('⚠️ รหัสผ่านไม่ตรงกัน'); return; }
+  if(np.length < 4) { showToast('⚠️ รหัสผ่านต้องมีอย่างน้อย 4 ตัว'); return; }
+  localStorage.setItem('elec-admin-pwd', np);
+  document.getElementById('new-pwd').value = '';
+  document.getElementById('confirm-pwd').value = '';
+  showToast('✅ เปลี่ยนรหัสผ่านสำเร็จ!');
+}
+
+function clearAllData() {
+  if(!confirm('⚠️ ลบข้อมูลอุปกรณ์ทั้งหมด?\nการกระทำนี้ไม่สามารถย้อนกลับได้')) return;
+  tools = [];
+  save();
+  renderList();
+  renderAdminStats();
+  showToast('🗑️ ลบข้อมูลทั้งหมดแล้ว');
+}
+
+function renderAdminStats() {
+  const inCount = tools.filter(t => t.status === 'in').length;
+  const outCount = tools.filter(t => t.status === 'out').length;
+  const el1 = document.getElementById('admin-total');
+  const el2 = document.getElementById('admin-in');
+  const el3 = document.getElementById('admin-out');
+  if(el1) el1.textContent = tools.length;
+  if(el2) el2.textContent = inCount;
+  if(el3) el3.textContent = outCount;
+}
+
+// ---- SAVE STATUS ----
+function showSaveStatus() {
+  // flash the submit button to show saved
+  const btn = document.querySelector('.btn-submit');
+  if(!btn) return;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '✅ บันทึกเสร็จแล้ว!';
+  btn.style.background = 'var(--green)';
+  setTimeout(() => {
+    btn.innerHTML = orig;
+    btn.style.background = '';
+  }, 1800);
+}
+
+// ---- END ADMIN ----
+
 function renderList() {
   const list = document.getElementById('tools-list');
   const inCount = tools.filter(t => t.status === 'in').length;
@@ -528,8 +780,9 @@ function renderList() {
         </div>
         ${t.status==='out'&&t.who?`<div class="tool-who">👤 ${t.who}</div>`:''}
         ${t.note?`<div class="tool-who">📝 ${t.note}</div>`:''}
+        ${t.updatedAt?`<div class="tool-updated">💾 บันทึกล่าสุด ${t.updatedAt}</div>`:''}
       </div>
-      <div class="tool-actions">
+      <div class="tool-actions admin-only">
         <button class="btn-edit" onclick="editTool('${t.id}')">✏️ แก้ไข</button>
         <button class="btn-del" onclick="deleteTool('${t.id}')">🗑️</button>
       </div>
@@ -639,10 +892,9 @@ function closeLightbox() {
   document.body.style.overflow = '';
 }
 
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeLightbox(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') { closeLightbox(); closeAdminModal(); } });
 
 renderList();
 </script>
 </body>
 </html>
-
