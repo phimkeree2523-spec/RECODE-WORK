@@ -220,6 +220,35 @@
   #snapshot-area {
     background: #F0F2F8; padding: 16px;
   }
+
+  /* LIGHTBOX */
+  .lightbox-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,0.92);
+    align-items: center; justify-content: center;
+    animation: fadeIn .2s ease;
+  }
+  .lightbox-overlay.open { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .lightbox-img {
+    max-width: 96vw; max-height: 90vh;
+    border-radius: 12px;
+    object-fit: contain;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    animation: zoomIn .2s ease;
+  }
+  @keyframes zoomIn { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .lightbox-close {
+    position: fixed; top: 16px; right: 16px;
+    background: rgba(255,255,255,0.15); color: #fff;
+    border: none; border-radius: 50%; width: 40px; height: 40px;
+    font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .tool-img img, .summary-tool-img img {
+    cursor: zoom-in;
+  }
 </style>
 </head>
 <body>
@@ -333,6 +362,12 @@
       📋 คัดลอกข้อความส่ง LINE
     </button>
   </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox-overlay" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img class="lightbox-img" id="lightbox-img" src="" alt="">
 </div>
 
 <div class="toast" id="toast"></div>
@@ -481,7 +516,7 @@ function renderList() {
   list.innerHTML = tools.map(t => `
     <div class="tool-card ${t.status==='out'?'out':''}">
       <div class="tool-img">
-        ${t.img ? `<img src="${t.img}">` : getEmoji(t.name)}
+        ${t.img ? `<img src="${t.img}" onclick="openLightbox('${t.img.replace(/'/g,"\\'")}')">` : getEmoji(t.name)}
       </div>
       <div class="tool-info">
         <div class="tool-name">${t.name}</div>
@@ -526,7 +561,7 @@ function renderSummary() {
   const mkRow = t => `
     <div class="summary-tool-row">
       <div class="summary-tool-img">
-        ${t.img ? `<img src="${t.img}">` : getEmoji(t.name)}
+        ${t.img ? `<img src="${t.img}" onclick="openLightbox('${t.img.replace(/'/g,"\\'")}')">` : getEmoji(t.name)}
       </div>
       <div>
         <div class="summary-tool-name">${t.name}</div>
@@ -592,7 +627,20 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-  
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightbox-img').src = '';
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeLightbox(); });
+
 renderList();
 </script>
 </body>
