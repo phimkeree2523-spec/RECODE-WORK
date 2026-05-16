@@ -371,6 +371,24 @@
     font-size: 18px; cursor: pointer; padding: 0 2px; line-height: 1;
   }
 
+  /* HISTORY */
+  .history-item {
+    background: var(--white); border-radius: 12px; padding: 12px 14px;
+    margin-bottom: 8px; box-shadow: 0 2px 8px rgba(26,35,64,0.06);
+    display: flex; gap: 10px; align-items: flex-start;
+    border-left: 4px solid var(--gray2);
+  }
+  .history-item.action-out { border-left-color: var(--orange); }
+  .history-item.action-in { border-left-color: var(--green); }
+  .history-item.action-del { border-left-color: var(--red); }
+  .history-item.action-edit { border-left-color: var(--yellow); }
+  .history-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+  .history-body { flex: 1; min-width: 0; }
+  .history-tool-name { font-weight: 700; font-size: 14px; color: var(--text); }
+  .history-action { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .history-time { font-size: 11px; color: var(--text-muted); margin-top: 4px; display:flex; gap:6px; align-items:center; }
+  .history-time-badge { background: var(--gray2); border-radius: 20px; padding: 2px 8px; font-weight: 600; }
+
   /* CHANGE PASSWORD */
   .pwd-section { margin-top: 20px; border-top: 2px solid var(--gray2); padding-top: 18px; }
   .pwd-section .form-title { font-size: 14px; }
@@ -404,6 +422,7 @@
   <button class="tab active" data-tab="list" onclick="switchTab('list')">📋 รายการ</button>
   <button class="tab admin-only" data-tab="add" onclick="switchTab('add')">➕ เพิ่มอุปกรณ์/นำออก</button>
   <button class="tab" data-tab="summary" onclick="switchTab('summary')">📊 สรุปวัน</button>
+  <button class="tab" data-tab="history" onclick="switchTab('history')">📜 ประวัติ</button>
   <button class="tab admin-only" data-tab="admin" onclick="switchTab('admin')">⚙️ Admin</button>
 </div>
 
@@ -560,6 +579,17 @@
   <img class="lightbox-img" id="lightbox-img" src="" alt="">
 </div>
 
+<!-- TAB: HISTORY -->
+<div class="content" id="tab-history">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <div style="font-family:'Prompt',sans-serif;font-size:15px;font-weight:700;color:var(--navy);">📜 ประวัติการใช้งาน</div>
+    <button onclick="clearHistory()" class="btn-del admin-only" style="border-radius:8px;padding:6px 12px;font-size:12px;">🗑️ ล้างประวัติ</button>
+  </div>
+  <div id="history-list">
+    <div class="empty-state"><div class="empty-icon">📜</div><div class="empty-text">ยังไม่มีประวัติการใช้งาน</div></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -625,6 +655,7 @@ function switchTab(name) {
   if(name === 'summary') renderSummary();
   if(name === 'list') renderList();
   if(name === 'admin') renderAdminStats();
+  if(name === 'history') renderHistory();
 }
 
 function setStatus(s) {
@@ -659,6 +690,7 @@ function saveTool() {
     if(!loc || !who) { showToast('⚠️ กรุณาระบุสถานที่และชื่อผู้นำออก'); return; }
   }
   const editId = document.getElementById('edit-id').value;
+  const now = new Date();
   const tool = {
     id: editId || Date.now().toString(),
     name,
@@ -667,13 +699,15 @@ function saveTool() {
     who: document.getElementById('tool-who').value.trim(),
     note: document.getElementById('tool-note').value.trim(),
     img: currentImgData,
-    updatedAt: new Date().toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})
+    updatedAt: now.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})
   };
   if(editId) {
     const idx = tools.findIndex(t => t.id === editId);
     if(idx >= 0) tools[idx] = tool;
+    addHistory({ action: 'edit', toolName: name, status: currentStatus, who: tool.who, location: tool.location, note: tool.note });
   } else {
     tools.push(tool);
+    addHistory({ action: currentStatus === 'out' ? 'out' : 'in', toolName: name, status: currentStatus, who: tool.who, location: tool.location, note: tool.note });
   }
   save();
   resetForm();
@@ -719,6 +753,8 @@ function editTool(id) {
 
 function deleteTool(id) {
   if(!confirm('ลบอุปกรณ์นี้?')) return;
+  const t = tools.find(x => x.id === id);
+  if(t) addHistory({ action: 'del', toolName: t.name, status: t.status, who: t.who, location: t.location });
   db.ref('tools/' + id).remove();
   showToast('🗑️ ลบแล้ว');
 }
@@ -958,6 +994,78 @@ function closeLightbox() {
   document.body.style.overflow = '';
 }
 
+// ---- HISTORY ----
+const historyRef = db.ref('history');
+
+function addHistory(entry) {
+  const now = new Date();
+  const d = now;
+  const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const log = {
+    id: Date.now().toString(),
+    action: entry.action,
+    toolName: entry.toolName,
+    who: entry.who || '',
+    location: entry.location || '',
+    note: entry.note || '',
+    status: entry.status,
+    timestamp: now.getTime(),
+    timeStr: now.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}),
+    dateStr: `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`,
+    dayStr: days[d.getDay()]
+  };
+  historyRef.child(log.id).set(log);
+}
+
+let historyData = [];
+historyRef.orderByChild('timestamp').on('value', snapshot => {
+  const data = snapshot.val();
+  historyData = data ? Object.values(data).reverse() : [];
+  const activeTab = document.querySelector('.tab.active');
+  if(activeTab && activeTab.dataset.tab === 'history') renderHistory();
+});
+
+function clearHistory() {
+  if(!confirm('ล้างประวัติทั้งหมด?')) return;
+  historyRef.remove();
+  showToast('🗑️ ล้างประวัติแล้ว');
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if(!historyData.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📜</div><div class="empty-text">ยังไม่มีประวัติการใช้งาน</div></div>';
+    return;
+  }
+  const actionMap = {
+    'out':  { icon: '🚧', label: 'นำออกจากออฟฟิศ', cls: 'action-out' },
+    'in':   { icon: '✅', label: 'นำกลับเข้าออฟฟิศ', cls: 'action-in' },
+    'edit': { icon: '✏️', label: 'แก้ไขข้อมูล',       cls: 'action-edit' },
+    'del':  { icon: '🗑️', label: 'ลบอุปกรณ์',         cls: 'action-del' }
+  };
+  list.innerHTML = historyData.map(h => {
+    const a = actionMap[h.action] || { icon: '📝', label: h.action, cls: '' };
+    const detail = [];
+    if(h.who) detail.push(`👤 ${h.who}`);
+    if(h.location) detail.push(`📍 ${h.location}`);
+    if(h.note) detail.push(`📝 ${h.note}`);
+    return `
+    <div class="history-item ${a.cls}">
+      <div class="history-icon">${a.icon}</div>
+      <div class="history-body">
+        <div class="history-tool-name">${h.toolName}</div>
+        <div class="history-action">${a.label}${detail.length ? ' · ' + detail.join(' · ') : ''}</div>
+        <div class="history-time">
+          <span class="history-time-badge">🕐 ${h.timeStr} น.</span>
+          <span>${h.dayStr} ${h.dateStr}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+// ---- END HISTORY ----
+
 // ---- PWA / SERVICE WORKER ----
 let deferredPrompt = null;
 
@@ -1003,4 +1111,3 @@ renderList();
 </script>
 </body>
 </html>
-
